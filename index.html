@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>Graterock</title>
+    </head>
+    <body>
+        <ol class="cards"></ol>
+        <script src="https://socketize.com/v1/socketize.min.js"></script>
+        <script type="application/javascript">
+            var params = {
+                "public_key": "[your_public_key]",
+                "auth_params": {
+                    "username": "admin",
+                    "payload": "[your_admin_key]"
+                }
+            };
+
+            var socketize = new Socketize.client(params);
+            var cards = document.querySelector(".cards");
+
+            cards.addEventListener("click", function(e){
+                if (e.target.matches(".card .remove")) {
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                    socketize.publish("removed", e.target.dataset._id);
+                    socketize.updateListItem("cards", null, e.target.dataset._id);
+                }
+            });
+
+            socketize.subscribe("removed", function(_id) {
+                var items = document.querySelectorAll(".card");
+
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].dataset._id == _id) {
+                        items[i].remove();
+                    }
+                }
+            });
+
+            socketize.on("login", function(user) {
+                var user = socketize.getUser();
+
+                socketize.getListItems("cards")
+                    .then(function(json) {
+                        for (var i = 0; i < json.length; i++) {
+                            var name = document.createElement("span");
+                            name.className = "name";
+                            name.innerHTML = json[i].name;
+
+                            var remove = document.createElement("a");
+                            remove.dataset._id = json[i]._id;
+                            remove.innerHTML = "remove";
+                            remove.className = "remove";
+                            remove.href = "#";
+
+                            var card = document.createElement("li");
+                            card.dataset._id = json[i]._id;
+                            card.className = "card";
+                            card.appendChild(name);
+                            card.appendChild(remove);
+
+                            cards.appendChild(card);
+                        }
+                    });
+            });
+        </script>
+    </body>
+</html>
